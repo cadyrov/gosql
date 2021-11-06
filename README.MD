@@ -1,0 +1,11 @@
+go run ./cmd/main.go 
+    --sql-host=0.0.0.0 
+    --sql-port=3306
+    --sql-user-name=root
+    --sql-db-name=
+    --sql-password=root
+    --mode=mysql
+    --scheme=
+    --table=table
+    --template=./resources/domain.tmpl
+    --result=./result.go

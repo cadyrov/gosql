@@ -1,0 +1,25 @@
+package domain
+
+// {{ .Table.GoName }} domain.
+// nolint: lll
+type {{ .Table.GoName }} struct {
+    {{ .Table.GoName }}Form
+}
+
+// {{ .Table.GoName }} form.
+// nolint: lll
+type {{ .Table.GoName }}Form struct {
+	{{ range $key, $column := .Columns }}
+        {{ $column.GoName }} {{ $column.GoType }}  `db:"{{ $column.SQLName }}" json:"{{ $column.SQLName }}"  description:"{{ $column.SQLComment }}"`  {{ end }}
+}
+
+type {{ .Table.GoName }}List []{{ .Table.GoName }}
+
+func (t {{ .Table.GoName }}) Validate() error{
+
+	return nil
+}
+
+type {{ .Table.GoName }}LookupForm struct {
+    IDs   []int64  `json:"ids"`
+}

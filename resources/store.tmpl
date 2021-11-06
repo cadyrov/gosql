@@ -1,0 +1,117 @@
+package store
+
+func (s *DBStore) Create{{ .Table.GoName }} (ctx context.Context,
+	dm domain.{{ .Table.GoName }} ) (domain.{{ .Table.GoName }} , goerr.IError) {
+	queryInsert := `INSERT INTO {{ .Table.Scheme }}.{{ .Table.SQLName }}
+	    ({{ range $key, $column := .NonPrimaryColumns }} {{ if $key }}, {{ end }}{{ $column.SQLName }}{{ end }})
+	    VALUES ({{ range $key, $column := .NonPrimaryColumns }} {{ if $key }}, {{ end }}?{{ end }})`
+
+	ctx, cancel := context.WithTimeout(ctx, writeTimeout)
+	defer cancel()
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return dm, goerr.Internal(err.Error())
+	}
+
+	r, err := tx.ExecContext(ctx, queryInsert, {{ range $key, $column := .NonPrimaryColumns }} {{ if $key }}, {{ end }} &dm.{{ $column.GoName }}{{ end }})
+	if err != nil {
+		_ = tx.Rollback()
+
+		return dm, goerr.Internal(err.Error())
+	}
+
+	dm.ID, err = r.LastInsertId()
+	if err != nil {
+		_ = tx.Rollback()
+
+		return dm, goerr.Internal(err.Error())
+	}
+
+	_ = tx.Commit()
+
+	return s.{{ .Table.GoName }}ByID(ctx, dm.ID)
+}
+
+func (s *DBStore) Update{{ .Table.GoName }}(ctx context.Context,
+	dm domain.{{ .Table.GoName }}) (result domain.{{ .Table.GoName }}, e goerr.IError) {
+	ctx, cancel := context.WithTimeout(ctx, writeTimeout)
+	defer cancel()
+
+	query := `UPDATE {{ .Table.Scheme }}.{{ .Table.SQLName }}
+		SET {{ range $key, $column := .NonPrimaryColumns }} {{ if $key }}, {{ end }}{{ $column.SQLName }} = ?{{ end }}
+		WHERE id = ?`
+
+	_, err := s.db.ExecContext(ctx, query, {{ range $key, $column := .NonPrimaryColumns }} {{ if $key }}, {{ end }} &dm.{{ $column.GoName }}{{ end }},
+	    {{ range $key, $column := .PrimaryColumns }} {{ if $key }}, {{ end }} &dm.{{ $column.GoName }}{{ end }})
+	if err != nil {
+		return result, goerr.Internal(err.Error())
+	}
+
+	return s.{{ .Table.GoName }}ByID(ctx, dm.ID)
+}
+
+func (s *DBStore) {{ .Table.GoName }}ByID(ctx context.Context, id int64) (result domain.{{ .Table.GoName }}, e goerr.IError) {
+	tbs, e := s.Lookup{{ .Table.GoName }}(ctx, domain.{{ .Table.GoName }}LookupForm{IDs: []int64{id}})
+	if e != nil {
+		return result, e
+	}
+
+	if len(tbs) > 0 {
+		result = tbs[0]
+	}
+
+	return result, e
+}
+
+func (s *DBStore) Delete{{ .Table.GoName }}(ctx context.Context, dm domain.{{ .Table.GoName }}) goerr.IError {
+	query := `DELETE FROM {{ .Table.Scheme }}.{{ .Table.SQLName }} WHERE id = ?`
+
+	ctx, cancel := context.WithTimeout(ctx, writeTimeout)
+	defer cancel()
+
+	if _, err := s.db.ExecContext(ctx, query, dm.ID); err != nil {
+		return goerr.Internal(err.Error())
+	}
+
+	return nil
+}
+
+//nolint: funlen
+func (s *DBStore) Lookup{{ .Table.GoName }}(ctx context.Context,
+	form domain.{{ .Table.GoName }}LookupForm) (res domain.{{ .Table.GoName }}List, e goerr.IError) {
+	ctx, cancel := context.WithTimeout(ctx, writeTimeout)
+	defer cancel()
+
+	b := NewBuilder(`{{ range $key, $column := .Columns }} {{ if $key }}, {{ end }} {{ $column.SQLName }}{{ end }}`)
+	b.Add("FROM {{ .Table.Scheme }}.{{ .Table.SQLName }} WHERE 1 = 1")
+
+	if len(form.IDs) > 0 {
+		sub, _, err := sqlx.In("AND id in (?)", form.IDs)
+		if err != nil {
+			return res, nil
+		}
+
+		b.Add(sub, Int64ToIface(form.IDs)...)
+	}
+
+	rws, err := s.db.QueryContext(ctx, b.SQL(), b.Args()...)
+	if err != nil {
+		return res, goerr.Internal(err.Error())
+	}
+
+	defer rws.Close()
+
+	for rws.Next() {
+		dm := domain.{{ .Table.GoName }}{}
+
+		err := rws.Scan({{ range $key, $column := .Columns }} {{ if $key }}, {{ end }} &dm.{{ $column.GoName }}{{ end }})
+		if err != nil {
+			return res, goerr.Internal(err.Error())
+		}
+
+		res = append(res, dm)
+	}
+
+	return res, e
+}

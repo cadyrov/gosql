@@ -1,0 +1,61 @@
+package service
+
+import (
+	"context"
+)
+
+type {{ .Table.GoName }}Service struct {
+	store store.Interface
+}
+
+func New{{ .Table.GoName }}Service(a *app.Application) *{{ .Table.GoName }}Service {
+	return &{{ .Table.GoName }}Service{
+		store: a.Store,
+	}
+}
+
+func (s *{{ .Table.GoName }}Service) Create(ctx context.Context,
+	dm domain.{{ .Table.GoName }}) (res domain.{{ .Table.GoName }}, e goerr.IError) {
+
+	if e = dm.Validate(); e != nil {
+		return res, e
+	}
+
+	return s.store.Create{{ .Table.GoName }}(ctx, dm)
+}
+
+func (s *{{ .Table.GoName }}Service) Delete(ctx context.Context, dm domain.{{ .Table.GoName }}) goerr.IError {
+	md, err := s.store.{{ .Table.GoName }}ByID(ctx, dm.ID)
+	if err != nil {
+		return err
+	}
+
+	if md.ID == 0 {
+		return goerr.NotFound("model not found")
+	}
+
+	return s.store.Delete{{ .Table.GoName }}(ctx, md)
+}
+
+func (s *{{ .Table.GoName }}Service) Get(ctx context.Context,
+	form domain.{{ .Table.GoName }}LookupForm) ([]domain.{{ .Table.GoName }}, goerr.IError) {
+	return s.store.Lookup{{ .Table.GoName }}(ctx, form)
+}
+
+func (s *{{ .Table.GoName }}Service) Update(ctx context.Context,
+	lp domain.LauncherProject) (result domain.{{ .Table.GoName }}, err goerr.IError) {
+	model, err := s.store.{{ .Table.GoName }}ByID(ctx, lp.ID)
+	if err != nil {
+		return result, err
+	}
+
+	if model.ID == 0 {
+		return result, goerr.NotFound("model not found")
+	}
+
+	if err := model.Validate(); err != nil {
+		return result, err
+	}
+
+	return s.store.Update{{ .Table.GoName }}(ctx, model)
+}
