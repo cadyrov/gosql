@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cadyrov/gosqlinspect/internal"
+	"github.com/cadyrov/goGOSQL/internal"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jessevdk/go-flags"
 	"github.com/jmoiron/sqlx"

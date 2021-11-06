@@ -1,4 +1,4 @@
-module github.com/cadyrov/gosqlinspect
+module github.com/cadyrov/gosql
 
 go 1.16
 
