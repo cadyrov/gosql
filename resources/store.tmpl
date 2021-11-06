@@ -115,3 +115,14 @@ func (s *DBStore) Lookup{{ .Table.GoName }}(ctx context.Context,
 
 	return res, e
 }
+
+
+type {{ .Table.GoName }}StoreInterface interface {
+    Create{{ .Table.GoName }}(ctx context.Context, t domain.{{ .Table.GoName }}) (domain.{{ .Table.GoName }}, goerr.IError)
+	{{ .Table.GoName }}ByID(ctx context.Context, id int64) (result domain.{{ .Table.GoName }}, err goerr.IError)
+	Lookup{{ .Table.GoName }}(ctx context.Context,
+		form domain.{{ .Table.GoName }}LookupForm) (res domain.{{ .Table.GoName }}List, e goerr.IError)
+	Update{{ .Table.GoName }}(ctx context.Context,
+    		t domain.{{ .Table.GoName }}) (result domain.{{ .Table.GoName }}, err goerr.IError)
+	Delete{{ .Table.GoName }}(ctx context.Context, t domain.{{ .Table.GoName }}) goerr.IError
+}
