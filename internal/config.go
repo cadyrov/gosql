@@ -7,12 +7,11 @@ const (
 
 type Config struct {
 	Mode     string `long:"mode" env:"GOSQL_MODE"  required:"true"`
-	Scheme   string `long:"scheme"  required:"true"`
-	Table    string `long:"table"  required:"true"`
+	Scheme   string `long:"scheme"  env:"GOSQL_SQL_SCHEME" required:"true"`
+	Table    string `long:"table"  env:"GOSQL_SQL_TABLE" required:"true"`
 	Template string `long:"template"  required:"true"`
 	Result   string `long:"result"  required:"true"`
 	SQL      SQL
-	MYSQL    MYSQL
 	PSQL     PSQL
 }
 
@@ -22,9 +21,6 @@ type SQL struct {
 	UserName string `long:"sql-user-name" env:"GOSQL_SQL_USER_NAME"`
 	DBName   string `long:"sql-db-name" env:"GOSQL_SQL_DB_NAME"`
 	Password string `long:"sql-password" env:"GOSQL_SQL_PASSWORD"`
-}
-
-type MYSQL struct {
 }
 
 type PSQL struct {
