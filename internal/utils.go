@@ -10,10 +10,11 @@ func sqlToGo(name string) string {
 	res := ""
 
 	for i := range words {
-		w := strings.Title(words[i])
+		w := strings.ToTitle(words[i])
 
 		if strings.EqualFold(w, "id") || strings.EqualFold(w, "url") || strings.EqualFold(w, "sql") ||
-			strings.EqualFold(w, "html") || strings.EqualFold(w, "http") || strings.EqualFold(w, "os") {
+			strings.EqualFold(w, "html") || strings.EqualFold(w, "http") || strings.EqualFold(w, "os") ||
+			strings.EqualFold(w, "json") {
 			w = strings.ToUpper(w)
 		}
 

@@ -1,0 +1,12 @@
+image: golang:1.18.1
+
+stages:
+- check
+
+check:
+  stage: check
+  script:
+    - git config --global url."https://gitlab-ci-token:$CI_BUILD_TOKEN@cadyrov".insteadOf "https://gitlab.com/cadyrov"
+    - go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.44.0
+    - go mod vendor
+    - golangci-lint run --print-linter-name --enable-all --exclude dupl

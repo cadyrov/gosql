@@ -1,3 +1,5 @@
+lint:
+	gofmt -s -w ./ && golangci-lint run
 domain:
 	 export `cat .local_env` && go run ./cmd/main.go --template=./resources/domain.tmpl --result=./result/domain.go
 store:

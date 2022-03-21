@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 )
 
 func FromPSQL(ctx context.Context, db *sqlx.DB, dbname string, table string) (Table, error) {
@@ -40,7 +41,11 @@ ORDER BY a.attnum;`
 
 	rws, err := db.QueryContext(ctx, sql, dbname, table)
 	if err != nil {
-		return tb, err
+		return tb, errors.Wrap(err, "from psql")
+	}
+
+	if rws.Err() != nil {
+		return tb, errors.Wrap(rws.Err(), "from psql")
 	}
 
 	defer rws.Close()
@@ -52,7 +57,7 @@ ORDER BY a.attnum;`
 		cl := Column{}
 
 		if err := rws.Scan(&cl.SQLName, &cl.SQLDataType, &cl.Nullable, &cl.IsPrimaryKey, &cl.SQLComment); err != nil {
-			return tb, err
+			return tb, errors.Wrap(err, "from psql")
 		}
 
 		tb.Columns = append(tb.Columns, cl)

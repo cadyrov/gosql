@@ -7,6 +7,7 @@ import (
 	"text/template"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 )
 
 type Generator struct {
@@ -50,19 +51,19 @@ func (g *Generator) generate(tbl Table) error {
 
 	templateFile, err := os.Open(g.templatePath)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "generate")
 	}
 
 	data, err := ioutil.ReadAll(templateFile)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "generate")
 	}
 
 	tmpl = template.Must(tmpl.Parse(string(data)))
 
 	file, err := os.Create(g.resultPath)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "generate")
 	}
 
 	primaryColumns := []Column{}
@@ -90,11 +91,11 @@ func (g *Generator) generate(tbl Table) error {
 		NonPrimaryColumns: nonPrimaryColumns,
 		Columns:           tbl.Columns,
 	}); err != nil {
-		return err
+		return errors.Wrap(err, "generate")
 	}
 
 	if err = file.Close(); err != nil {
-		return err
+		return errors.Wrap(err, "generate")
 	}
 
 	return nil

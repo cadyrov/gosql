@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -22,7 +23,11 @@ func FromMySQL(ctx context.Context, db *sqlx.DB, dbname string, table string) (T
 
 	rws, err := db.QueryContext(ctx, sql, dbname, table)
 	if err != nil {
-		return tb, err
+		return tb, errors.Wrap(err, "from mysql")
+	}
+
+	if rws.Err() != nil {
+		return tb, errors.Wrap(rws.Err(), "from mysql")
 	}
 
 	defer rws.Close()
@@ -36,7 +41,7 @@ func FromMySQL(ctx context.Context, db *sqlx.DB, dbname string, table string) (T
 		nbl := ""
 
 		if err := rws.Scan(&cl.SQLName, &cl.SQLDataType, &nbl, &cl.SQLComment, &extra); err != nil {
-			return tb, err
+			return tb, errors.Wrap(err, "from mysql")
 		}
 
 		if nbl == MysqlNullable {
