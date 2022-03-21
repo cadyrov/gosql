@@ -1,3 +1,4 @@
 .idea
 mysql_test.go
 .local_env
+result
