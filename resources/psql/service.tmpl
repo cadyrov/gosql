@@ -1,0 +1,77 @@
+package service
+
+import (
+	"context"
+)
+
+type {{ .Table.GoName }}Service struct {
+	store store.Interface
+}
+
+func New{{ .Table.GoName }}Service(a *app.Application) *{{ .Table.GoName }}Service {
+	return &{{ .Table.GoName }}Service{
+		store: a.Store,
+	}
+}
+
+func (s *{{ .Table.GoName }}Service) Create(ctx context.Context,
+	dm domain.{{ .Table.GoName }}) (res domain.{{ .Table.GoName }}, e error) {
+
+	if e = dm.Validate(); e != nil {
+		return res, goerr.BadRequest{}.Wrap(e, "service create")
+	}
+
+	res, e := s.storage.Create{{ .Table.GoName }}(ctx, dm)
+
+	return res, goerr.Internal{}.Wrap(e, "service create")
+}
+
+var Err{{ .Table.GoName }}NotFound = errors.New("model not found")
+
+func (s *{{ .Table.GoName }}Service) Delete(ctx context.Context, dm domain.{{ .Table.GoName }}) error{
+	md, err := s.storage.{{ .Table.GoName }}(ctx, dm.ID)
+	if err != nil {
+		return err
+	}
+
+	if md.ID == 0 {
+		return goerr.NotFound{}.Wrap(Err{{ .Table.GoName }}NotFound, "service delete")
+	}
+
+	return goerr.Internal{}.Wrap(s.storage.Delete{{ .Table.GoName }}(ctx, md), "service create")
+}
+
+func (s *{{ .Table.GoName }}Service) Get(ctx context.Context,
+	form domain.{{ .Table.GoName }}LookupForm) (domain.{{ .Table.GoName }}List, error) {
+	res, err :=  s.storage.{{ .Table.GoName }}s(ctx, form)
+
+	return res, goerr.Internal{}.Wrap(err, "service create")
+}
+
+func (s *{{ .Table.GoName }}Service) Update(ctx context.Context,
+	lp domain.{{ .Table.GoName }}) (result domain.{{ .Table.GoName }}, err error) {
+	model, err := s.storage.{{ .Table.GoName }}(ctx, lp.ID)
+	if err != nil {
+		return result, goerr.Internal{}.Wrap(err, "service update")
+	}
+
+	if model.ID == 0 {
+		return result, goerr.NotFound{}.Wrap(Err{{ .Table.GoName }}NotFound, "service update")
+	}
+
+	if err := model.Validate(); err != nil {
+		return result, goerr.BadRequest{}.Wrap(err, "service update")
+	}
+
+	return s.storage.Update{{ .Table.GoName }}(ctx, model)
+}
+
+type {{ .Table.GoName }}StoreInterface interface {
+    Create{{ .Table.GoName }}(ctx context.Context, t domain.{{ .Table.GoName }}) (domain.{{ .Table.GoName }}, error)
+	{{ .Table.GoName }}(ctx context.Context, id int64) (result domain.{{ .Table.GoName }}, err error)
+	{{ .Table.GoName }}s(ctx context.Context,
+		form domain.{{ .Table.GoName }}LookupForm) (res domain.{{ .Table.GoName }}List, err error)
+	Update{{ .Table.GoName }}(ctx context.Context,
+    		t domain.{{ .Table.GoName }}) (result domain.{{ .Table.GoName }}, err error)
+	Delete{{ .Table.GoName }}(ctx context.Context, t domain.{{ .Table.GoName }}) error
+}

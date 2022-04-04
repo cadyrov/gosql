@@ -1,0 +1,21 @@
+package domain
+
+type {{ .Table.GoName }} struct {
+    {{ .Table.GoName }}Form
+}
+
+type {{ .Table.GoName }}Form struct {
+	{{ range $key, $column := .Columns }}
+        {{ $column.GoName }} {{ $column.GoType }}  `json:"{{ $column.SQLName }}"  description:"{{ $column.SQLComment }}"`  {{ end }}
+}
+
+type {{ .Table.GoName }}List []{{ .Table.GoName }}
+
+func (t {{ .Table.GoName }}) Validate() error{
+
+	return nil
+}
+
+type {{ .Table.GoName }}LookupForm struct {
+    IDs   []int64  `json:"ids"`
+}

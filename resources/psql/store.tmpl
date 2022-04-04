@@ -1,0 +1,105 @@
+package store
+
+func (s *Storage) Create{{ .Table.GoName }}(ctx context.Context,
+    in domain.{{ .Table.GoName }}) (dm domain.{{ .Table.GoName }}, err error) {
+	md := prepareDomainToModel{{ .Table.GoName }}(in)
+
+	ctx, cn := context.WithTimeout(ctx, s.writeTimeout)
+	defer cn()
+
+	_, err = s.db.Model(&md).Context(ctx).Returning("*").Insert()
+
+	return prepareModelToDomain{{ .Table.GoName }}(md), goerr.Internal{}.Wrap(err, "psql create {{ .Table.GoName }}")
+}
+
+
+func (s *Storage) Update{{ .Table.GoName }}(ctx context.Context,
+    in domain.{{ .Table.GoName }}) (dm domain.{{ .Table.GoName }}, err error) {
+	md := prepareDomainToModel{{ .Table.GoName }}(in)
+
+	ctx, cn := context.WithTimeout(ctx, s.writeTimeout)
+	defer cn()
+
+	_, err = s.db.Model(&md).Context(ctx).WherePK().Update()
+
+	return prepareModelToDomain{{ .Table.GoName }}(md), goerr.Internal{}.Wrap(err, "psql update {{ .Table.GoName }}")
+}
+
+func (s *Storage) Delete{{ .Table.GoName }}(ctx context.Context, in domain.{{ .Table.GoName }}) error {
+	md := prepareDomainToModel{{ .Table.GoName }}(in)
+
+	ctx, cn := context.WithTimeout(ctx, s.writeTimeout)
+	defer cn()
+
+	_, err := s.db.Model(&md).Context(ctx).WherePK().Delete()
+
+	return goerr.Internal{}.Wrap(err, "psql delete name {{ .Table.GoName }}")
+}
+
+func (s *Storage) {{ .Table.GoName }}s(ctx context.Context,
+    frm domain.{{ .Table.GoName }}LookupForm) (sl domain.{{ .Table.GoName }}List, count int, err error) {
+	mdArr := []models.{{ .Table.GoName }}{}
+
+	ctx, cn := context.WithTimeout(ctx, s.readTimeout)
+	defer cn()
+
+	q := s.db.Model(&mdArr).Context(ctx)
+
+	if len(frm.IDs) > 0 {
+		q.Where("id = ANY(?)", pg.Array(frm.IDs))
+	}
+
+	if strings.Trim(frm.Name, " ") != "" {
+		frmName := strings.ToLower(frm.Name)
+		q.Where("LOWER(name) LIKE ?", frmName)
+	}
+
+	count, err = q.SelectAndCount()
+	if err != nil {
+		return sl, count, goerr.Internal{}.Wrap(err, "psql list of {{ .Table.GoName }}")
+	}
+
+	for i := range mdArr {
+		sl = append(sl, prepareModelToDomain{{ .Table.GoName }}(mdArr[i]))
+	}
+
+	return sl, count, nil
+}
+
+var Err{{ .Table.GoName }}NotFound = errors.New("scope not found")
+
+func (s *Storage) {{ .Table.GoName }}(ctx context.Context, id int64) (dm domain.{{ .Table.GoName }}, err error) {
+	domains, _, err := s.{{ .Table.GoName }}s(ctx, domain.{{ .Table.GoName }}LookupForm{IDs: []int64{id}})
+	if err != nil {
+		return dm, err
+	}
+
+	if len(domains) == 0 {
+		return dm, goerr.NotFound{}.Wrap(Err{{ .Table.GoName }}NotFound, "psql")
+	}
+
+	return domains[0], nil
+}
+
+
+
+
+type {{ .Table.GoName }} struct {
+	{{ range $key, $column := .Columns }}
+        {{ $column.GoName }} {{ $column.GoType }}  `db:"{{ $column.SQLName }}" description:"{{ $column.SQLComment }}"`  {{ end }}
+}
+
+
+func prepareModelToDomain{{ .Table.GoName }}(s models.{{ .Table.GoName }}) domain.{{ .Table.GoName }} {
+	return domain.{{ .Table.GoName }}{
+	{{ range $key, $column := .Columns }}
+            {{ $column.GoName }}: s.{{ $column.GoName }},  {{ end }}
+	}
+}
+
+func prepareDomainToModel{{ .Table.GoName }}(s domain.{{ .Table.GoName }}) models.{{ .Table.GoName }} {
+	return models.{{ .Table.GoName }}{
+    {{ range $key, $column := .Columns }}
+         {{ $column.GoName }}: s.{{ $column.GoName }},  {{ end }}
+    }
+}
